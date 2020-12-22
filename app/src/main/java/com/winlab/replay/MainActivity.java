@@ -9,6 +9,7 @@ import android.hardware.SensorEventListener;
 import android.hardware.SensorManager;
 import android.media.MediaPlayer;
 import android.os.Bundle;
+import android.os.Environment;
 import android.util.Log;
 import android.view.WindowManager;
 import android.widget.CompoundButton;
@@ -111,7 +112,8 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                         isPlay = true;
-                        startPlaying("http://" + HOST + "/server_audio/"+ audio);
+//                        startPlaying("http://" + HOST + "/server_audio/"+ audio);
+                        downloadAndPlay(audio);
                         currentIndex++;
                     }
                     Log.d(LOG_TAG,"block here");
@@ -137,8 +139,8 @@ public class MainActivity extends AppCompatActivity {
             sensorManager.registerListener(sensorEventListener, accelerometer, samplingPeriodUs);
             // play audio
             mMediaPlayer.setDataSource(path);
-//            mMediaPlayer.prepare();
-            mMediaPlayer.prepareAsync();
+            mMediaPlayer.prepare();
+//            mMediaPlayer.prepareAsync();
             mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
                 public void onPrepared(MediaPlayer mp) {
@@ -253,5 +255,28 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+    }
+    private String downloadAndPlay(String fileName){
+        String url = "http://"+HOST+"/server_audio/" + fileName;
+        String mFilePath = Environment.getExternalStorageDirectory().getAbsolutePath();
+        mFilePath += "/SoundRecorder/";
+        final String mDestFileDir = mFilePath;
+        final String mdestFileName = fileName;
+        String path = mFilePath + fileName;
+
+        OkhttpUtil.okHttpDownloadFile(url, new CallBackUtil.CallBackFile(mDestFileDir, mdestFileName) {
+            @Override
+            public void onFailure(Call call, Exception e) {
+
+            }
+
+            @Override
+            public void onResponse(File response) {
+                Log.d(LOG_TAG, "Download File success");
+                startPlaying(mDestFileDir+mdestFileName);
+            }
+        });
+
+        return path;
     }
 }
