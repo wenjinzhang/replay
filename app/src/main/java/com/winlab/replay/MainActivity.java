@@ -48,6 +48,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Switch replaySwitch = null;
     private TextView textViewNowPlaying = null;
+    private TextView textViewPlayProgress = null;
     private EditText editTextHost = null;
     private EditText editTextSampleRate = null;
 
@@ -71,6 +72,7 @@ public class MainActivity extends AppCompatActivity {
         textViewNowPlaying = findViewById(R.id.textViewNowPlay);
         editTextHost = findViewById(R.id.editTextHost);
         editTextSampleRate = findViewById(R.id.editTextSampleRate);
+        textViewPlayProgress = findViewById(R.id.textViewPlayProgress);
     }
 
     private void updateParameters(){
@@ -108,6 +110,8 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 textViewNowPlaying.setText(playingAudio);
+                                String progress = (currentIndex+1) + "/" + playList.size();
+                                textViewPlayProgress.setText(progress);
                             }
                         });
                         isPlay = true;
