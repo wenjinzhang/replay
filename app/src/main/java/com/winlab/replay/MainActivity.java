@@ -31,8 +31,10 @@ import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Map;
 import java.util.Queue;
 
 public class MainActivity extends AppCompatActivity {
@@ -57,8 +59,11 @@ public class MainActivity extends AppCompatActivity {
     private String playingAudio = "None";
 
 
-    private List<String> playList = null;
+//    private List<String> playList = null;
+    private Map<String, List> playmap = null;
+    private int playListSize = 0;
     private int currentIndex = 0;
+    private String currentFolder = null;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -73,6 +78,8 @@ public class MainActivity extends AppCompatActivity {
         editTextHost = findViewById(R.id.editTextHost);
         editTextSampleRate = findViewById(R.id.editTextSampleRate);
         textViewPlayProgress = findViewById(R.id.textViewPlayProgress);
+
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
     }
 
     private void updateParameters(){
@@ -99,7 +106,9 @@ public class MainActivity extends AppCompatActivity {
 
         @Override
         public void run() {
-//                while(!playQueue.isEmpty()){
+            for(String key: playmap.keySet()){
+                currentFolder = key;
+                List<String> playList = playmap.get(key);
                 for(currentIndex = 0; currentIndex < playList.size(); ){
                     Log.d(LOG_TAG, "current"+isPlay+"," + interrupt);
                     String audio = playList.get(currentIndex);
@@ -110,12 +119,12 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public void run() {
                                 textViewNowPlaying.setText(playingAudio);
-                                String progress = (currentIndex+1) + "/" + playList.size();
+                                String progress = (currentIndex+1) + "/" + playListSize;
                                 textViewPlayProgress.setText(progress);
                             }
                         });
                         isPlay = true;
-                        startPlaying("http://" + HOST + "/server_audio/"+ audio);
+                        startPlaying("http://" + HOST + "/server_audio/"+audio);
                         currentIndex++;
                     }
                     Log.d(LOG_TAG,"block here");
@@ -129,6 +138,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
                 Log.d(LOG_TAG, "end here");
+            }
         }
 
     };
@@ -170,13 +180,13 @@ public class MainActivity extends AppCompatActivity {
         sensorManager.unregisterListener(sensorEventListener);
 
         // upload accelerometer data
-
         HashMap<String, String> parameters = new HashMap<>();
         parameters.put("machine", "va");
         parameters.put("name", playingAudio);
         parameters.put("acclog", sensorLog.toString());
+        parameters.put("freqband", currentFolder);
         sensorLog = new StringBuffer();
-        OkhttpUtil.okHttpPost("http://"+HOST+"/acclog", parameters, new CallBackUtil.CallBackString() {
+        OkhttpUtil.okHttpPost("http://"+HOST+"/acc2", parameters, new CallBackUtil.CallBackString() {
             @Override
             public void onFailure(Call call, Exception e) {
                 Log.e(LOG_TAG, "fail to upload log");
@@ -192,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
         mMediaPlayer.release();
         mMediaPlayer = null;
         isPlay = false;
-        if (currentIndex >= playList.size()){
+        if (currentIndex >= playListSize){
             replaySwitch.setChecked(false);
         }
     }
@@ -228,9 +238,10 @@ public class MainActivity extends AppCompatActivity {
     };
 
     private void loadPlayList(){
-        playList = new ArrayList();
-
-        String link = "http://"+HOST+"/playlist";
+//        playList = new ArrayList();
+        playmap = new HashMap();
+        playListSize = 0;
+        String link = "http://"+HOST+"/playlist2";
         Log.e(LOG_TAG, "link:" + link);
         OkhttpUtil.okHttpGet(link, new CallBackUtil.CallBackString() {
             @Override
@@ -243,12 +254,21 @@ public class MainActivity extends AppCompatActivity {
             public void onResponse(String response) {
                 Log.e(LOG_TAG, "success to get audio list");
                 try {
-                    JSONArray jsonArray = new JSONArray(response);
-                    for(int i = 0; i < jsonArray.length(); i++){
-                        String audio = jsonArray.getString(i);
-                        playList.add(audio);
-                        Log.d(LOG_TAG, audio);
+
+                    JSONObject jsonObj = new JSONObject(response);
+
+                    for (Iterator<String> it = jsonObj.keys(); it.hasNext(); ) {
+                        String key = it.next();
+                        playmap.put(key, new ArrayList());
+                        JSONArray array = jsonObj.getJSONArray(key);
+                        playListSize += array.length();
+                        for(int i = 0; i < array.length(); i++){
+                            String audio = array.getString(i);
+                            playmap.get(key).add(audio);
+//                            Log.d(LOG_TAG, key+"----"+audio);
+                        }
                     }
+
                     Thread syncThread = new Thread(runnable);
                     syncThread.start();
 
