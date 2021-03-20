@@ -129,7 +129,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                     Log.d(LOG_TAG,"block here");
                     try {
-                        Thread.sleep(10000);
+                        Thread.sleep(8000);
                     } catch (InterruptedException e) {
                         e.printStackTrace();
                     }
@@ -147,8 +147,6 @@ public class MainActivity extends AppCompatActivity {
         mMediaPlayer = new MediaPlayer();
         try {
             Log.d(LOG_TAG, "play start" + path);
-            // listen sensor
-            sensorManager.registerListener(sensorEventListener, accelerometer, samplingPeriodUs);
             // play audio
             mMediaPlayer.setDataSource(path);
 //            mMediaPlayer.prepare();
@@ -156,7 +154,8 @@ public class MainActivity extends AppCompatActivity {
             mMediaPlayer.setOnPreparedListener(new MediaPlayer.OnPreparedListener() {
                 @Override
                 public void onPrepared(MediaPlayer mp) {
-
+                    // listen sensor
+                    sensorManager.registerListener(sensorEventListener, accelerometer, samplingPeriodUs);
                     mMediaPlayer.start();
                 }
             });
